@@ -1,0 +1,5 @@
+.snake {
+  fill: var(--tomato-400);
+  stroke: var(--tomato-500);
+  stroke-width: 2;
+}

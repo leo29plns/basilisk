@@ -1,0 +1,10 @@
+.board {
+  --grid-color: var(--tomato-50);
+  --grid-size: 32px;
+
+  background: 
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  background-position: center;
+}
