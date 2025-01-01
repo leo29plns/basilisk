@@ -1,24 +1,111 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
 import { useTicker } from '../../hooks/useTicker';
 import styles from './Snake.module.css';
+import { TPoint } from '../../types/TPoint';
+import { TCollider } from '../../types/TCollider';
 
-export interface SnakeProps {
+export interface ISnake {
   length: number;
   speed: number;
+  boardRef: React.RefObject<SVGSVGElement>;
+  colliders?: TCollider[];
   circleRadius?: number;
   circleSpacing?: number;
 }
 
-export const Snake = ({ length, speed, circleRadius = 16, circleSpacing = 8 }: SnakeProps) => {
+export const Snake = ({ length, speed, boardRef, colliders, circleRadius = 16, circleSpacing = 8 }: ISnake) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const bufferRef = useRef<{ x: number; y: number }[]>([{ x: circleRadius + 8, y: circleRadius + 8 }]);
-  const [direction, setDirection] = useState({ x: 1, y: 0 });
+  const bufferRef = useRef<TPoint[]>([{ x: circleRadius + 8, y: circleRadius + 8 }]);
+  const directionRef = useRef({ x: 1, y: 0 });
 
-  const renderSnake = useCallback(() => {
+  const isPointColliding = useCallback(({
+    head,
+    point,
+    radius = 1,
+    tolerance = 0,
+  }: {
+    head: TPoint;
+    point: TPoint;
+    radius?: number;
+    tolerance?: number;
+  }): boolean => {
+    const distance = Math.hypot(head.x - point.x, head.y - point.y);
+    return Math.ceil(distance) - circleRadius < radius - tolerance;
+  }, [circleRadius]);  
+
+  const isSelfColliding = useCallback((
+      head: TPoint,
+      segments: TPoint[],
+      offset: number,
+      circleRadius: number
+    ): boolean => {
+    for (let i = offset; i < segments.length; i++) {
+      const collides = isPointColliding({
+        head,
+        point: segments[i],
+        radius: circleRadius,
+        tolerance: circleRadius
+      });
+      if (collides) return true;
+    }
+  
+    return false;
+  }, [isPointColliding]);
+
+  const determineSelfCollidingOffset = useCallback((): number => {
+    const minDistance = Math.max(2 * circleRadius, circleSpacing);
+    return Math.ceil(minDistance / circleSpacing);
+  }, [circleRadius, circleSpacing]);
+
+  const isOutOfBoard = useCallback((head: TPoint): boolean => {
+    const board = boardRef.current?.getBoundingClientRect();
+    if (!board) return false;
+
+    return (
+      head.x - circleRadius < board.left ||
+      head.x + circleRadius > board.right ||
+      head.y - circleRadius < board.top ||
+      head.y + circleRadius > board.bottom
+    );
+  }, [boardRef, circleRadius]);
+  
+  const doCollides = useCallback(({
+    head,
+    segments,
+  }: {
+    head: TPoint;
+    segments: TPoint[]
+  }): null | TPoint => {
+    if (isSelfColliding(head, segments, determineSelfCollidingOffset(), circleRadius)) {
+      console.log('Self collision');
+      return head;
+    }
+
+    if (isOutOfBoard(head)) {
+      console.log('Out of board');
+      return head;
+    }
+
+    if (!colliders) return null;
+
+    // checks every collider
+    for (const collider of colliders) {
+      for (const point of collider.points) {
+        if (isPointColliding({head, point, radius: collider.radius})) {
+          collider.callBackFn(point);
+          return point;
+        }
+      }
+    }
+  
+    return null;
+  }, [colliders, isPointColliding, isSelfColliding, determineSelfCollidingOffset, circleRadius, isOutOfBoard]);
+
+  const renderSnake = useCallback((): TPoint[] => {
     const svg = d3.select(svgRef.current);
 
-    const segmentPositions: { x: number; y: number }[] = [];
+    const segmentPositions: TPoint[] = [];
 
     let accumulatedDistance = 0;
     let currentIndex = 0;
@@ -56,7 +143,7 @@ export const Snake = ({ length, speed, circleRadius = 16, circleSpacing = 8 }: S
       }
     }
 
-    const circles = svg.selectAll('circle').data(segmentPositions.reverse());
+    const circles = svg.selectAll('circle').data([...segmentPositions].reverse());
 
     circles
       .join(
@@ -69,6 +156,8 @@ export const Snake = ({ length, speed, circleRadius = 16, circleSpacing = 8 }: S
       )
       .attr('cx', d => d.x)
       .attr('cy', d => d.y);
+
+      return segmentPositions;
   }, [length, circleRadius, circleSpacing]);
 
   // Plugin the ticker, render the snake
@@ -77,8 +166,8 @@ export const Snake = ({ length, speed, circleRadius = 16, circleSpacing = 8 }: S
 
     const head = bufferRef.current[0];
     const newHead = {
-      x: head.x + direction.x * distance,
-      y: head.y + direction.y * distance,
+      x: head.x + directionRef.current.x * distance,
+      y: head.y + directionRef.current.y * distance,
     };
 
     bufferRef.current.unshift(newHead);
@@ -88,7 +177,10 @@ export const Snake = ({ length, speed, circleRadius = 16, circleSpacing = 8 }: S
       bufferRef.current.pop();
     }
 
-    renderSnake();
+    const segments = renderSnake();
+    const collisionPoint = doCollides({head: newHead, segments});
+
+    if (collisionPoint) console.log('collisionPoint', collisionPoint);
   });
 
   const handleMouseMove = (event: MouseEvent) => {
@@ -99,10 +191,7 @@ export const Snake = ({ length, speed, circleRadius = 16, circleSpacing = 8 }: S
     const dy = event.clientY - head.y;
     const angle = Math.atan2(dy, dx);
 
-    setDirection({
-      x: Math.cos(angle),
-      y: Math.sin(angle),
-    });
+    directionRef.current = { x: Math.cos(angle), y: Math.sin(angle) };
   };
 
   useEffect(() => {
