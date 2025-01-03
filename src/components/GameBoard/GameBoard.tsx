@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { Snake } from '../Snake/Snake';
-import styles from './GameBoard.module.css';
-
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { SnakeManager } from '../Snake/SnakeManager'; 
+import { IManager } from '../../interfaces/IManager';
 import { TCollider } from '../../types/TCollider';
-import { TPoint } from '../../types/TPoint';
+import { FoodManager } from '../Collectible/Food/FoodManager';
+import styles from './GameBoard.module.css';
 
 export interface IGameBoard {
   width: number;
@@ -11,41 +11,44 @@ export interface IGameBoard {
 }
 
 export const GameBoard = ({ width, height }: IGameBoard) => {
-  const [length, setLength] = useState(5);
-  const [speed, setSpeed] = useState(100);
   const boardRef = useRef<SVGSVGElement>(null);
+  // const [colliders, setColliders] = useState<TCollider[]>([]);
+  // const [collectibles, setCollectibles] = useState<ReactNode[]>([]);
 
+  const snakeManager = useMemo(() => new SnakeManager(5, 100, boardRef), []);
 
-  const testCollider: TCollider = {
-    callBackFn: (point: TPoint) => {
-      console.log(`Collision detected at point: x=${point.x}, y=${point.y}`);
-    },
-    points: [
-      { x: 600, y: 700 }, // Point de collision
-    ],
-    radius: 100, // Rayon de détection (ajustez si nécessaire)
-  };
+  // // Déclaration des managers (nourriture, etc.)
+  // const managers: IManager[] = useMemo(() => [new FoodManager()], []);
 
+  // // Mise en place des managers après le rendu initial
+  // useEffect(() => {
+  //   // Passer la fonction de rendu (setCollectibles) à SnakeManager
+  //   snakeManager.setRenderFn(setCollectibles);
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setLength((prevLength) => prevLength + 1);
-      setSpeed((prevSpeed) => prevSpeed * 1.01);
-    }, 1000);
+  //   // Passer snakeManager aux autres managers
+  //   managers.forEach(manager => {
+  //     manager
+  //       .setSnakeManager(snakeManager)
+  //       .setRenderFn(setCollectibles);
+  //   });
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
+  //   // Récupérer et mettre à jour les colliders
+  //   const newColliders = managers.flatMap(manager => manager.getColliders());
+  //   setColliders(newColliders);
+
+  //   // Passer les colliders existants aux managers
+  //   managers.forEach(manager => manager.setExistingColliders(newColliders));
+  // }, [managers, snakeManager]);
+
+  // // Mettre à jour les colliders de SnakeManager chaque fois qu'ils changent
+  // useEffect(() => {
+  //   snakeManager.setColliders(colliders);
+  // }, [colliders, snakeManager]);
 
   return (
     <svg width={width} height={height} className={styles.board} ref={boardRef}>
-      <Snake
-        length={length}
-        speed={speed}
-        boardRef={boardRef}
-        colliders={[testCollider]}
-      />
+      {/* {collectibles} */}
+      {snakeManager.getSnake()}
     </svg>
   );
 };
