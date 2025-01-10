@@ -94,6 +94,10 @@ export const GameBoard = ({ size }: IGameBoard) => {
   }, []);
 
   const renderSnake = () => {
+    if (gameOver) {
+      return null;
+    }
+
     return (
       <Snake
         length={snakeLength}
