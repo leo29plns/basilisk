@@ -1,54 +1,120 @@
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import { SnakeManager } from '../Snake/SnakeManager'; 
-import { IManager } from '../../interfaces/IManager';
-import { TCollider } from '../../types/TCollider';
-import { FoodManager } from '../Collectible/Food/FoodManager';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './GameBoard.module.css';
+import { Snake } from '../Snake/Snake';
+import { TCollectible } from '../../types/TCollectible';
+import { FoodManager } from '../Collectible/Food/FoodManager';
+import { TSize } from '../../types/TSize';
+import { TrapManager } from '../Collectible/Trap/TrapManager';
+import { FoodUltraManager } from '../Collectible/Food/FoodUltraManager';
+import { Score } from '../Score/Score';
+import { YouLooseScreen } from '../Screen/YouLoose/YouLooseScreen';
+import gsap from 'gsap';
 
-export interface IGameBoard {
-  width: number;
-  height: number;
+declare global {
+  interface Window {
+    collectibles: TCollectible[];
+    boardSize: TSize;
+  }
 }
 
-export const GameBoard = ({ width, height }: IGameBoard) => {
+export interface IGameBoard {
+  size: TSize;
+}
+
+export const GameBoard = ({ size }: IGameBoard) => {
   const boardRef = useRef<SVGSVGElement>(null);
-  // const [colliders, setColliders] = useState<TCollider[]>([]);
-  // const [collectibles, setCollectibles] = useState<ReactNode[]>([]);
 
-  const snakeManager = useMemo(() => new SnakeManager(5, 100, boardRef), []);
+  window.collectibles = [];
+  window.boardSize = size;
 
-  // // Déclaration des managers (nourriture, etc.)
-  // const managers: IManager[] = useMemo(() => [new FoodManager()], []);
+  const [snakeLength, setSnakeLength] = useState(10);
+  const [snakeSpeed, setSnakeSpeed] = useState(100);
+  const [collectibles, setCollectibles] = useState<TCollectible[]>([]);
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const gameOverMessage = useRef<undefined | JSX.Element>(undefined);
 
-  // // Mise en place des managers après le rendu initial
-  // useEffect(() => {
-  //   // Passer la fonction de rendu (setCollectibles) à SnakeManager
-  //   snakeManager.setRenderFn(setCollectibles);
+  useEffect(() => {
+    window.collectibles = collectibles;
+  }, [collectibles]);
 
-  //   // Passer snakeManager aux autres managers
-  //   managers.forEach(manager => {
-  //     manager
-  //       .setSnakeManager(snakeManager)
-  //       .setRenderFn(setCollectibles);
-  //   });
+  const addCollectible = (collectible: TCollectible) => {
+    setCollectibles((prev) => [...prev, collectible]);
+  };
 
-  //   // Récupérer et mettre à jour les colliders
-  //   const newColliders = managers.flatMap(manager => manager.getColliders());
-  //   setColliders(newColliders);
+  const removeCollectible = (collectible: TCollectible) => {
+    setCollectibles((prev) => prev.filter((c) => c !== collectible));
+  };
 
-  //   // Passer les colliders existants aux managers
-  //   managers.forEach(manager => manager.setExistingColliders(newColliders));
-  // }, [managers, snakeManager]);
+  const modifySnakeLength = (modifySnakeLength: number) => {
+    setSnakeLength((prev) => prev + modifySnakeLength);
+  };
 
-  // // Mettre à jour les colliders de SnakeManager chaque fois qu'ils changent
-  // useEffect(() => {
-  //   snakeManager.setColliders(colliders);
-  // }, [colliders, snakeManager]);
+  const modifySnakeSpeed = (modifySnakeSpeed: number) => {
+    setSnakeSpeed((prev) => prev + modifySnakeSpeed);
+  };
+
+  const modifyScore = (modifyScore: number) => {
+    setScore((prev) => prev + modifyScore);
+  };
+
+  const gameOverWithMessage = (message: JSX.Element) => {
+    gameOverMessage.current = message;
+    setGameOver(true);
+  }
+
+  const resetGame = () => {
+    // setSnakeLength(10);
+    // setSnakeSpeed(100);
+    // setCollectibles([]);
+    // setScore(0);
+    // gameOverMessage.current = undefined;
+    // setGameOver(false);
+    // gsap.ticker.wake();
+    window.location.reload(); // parce que je suis un flemmard
+  };
+
+  useEffect(() => {
+    if (snakeLength <= 1 && !gameOver) {
+      setGameOver(true);
+    }
+  }, [snakeLength, gameOver]);
+
+  useEffect(() => {
+    if (gameOver) {
+      gsap.ticker.sleep()
+      setSnakeSpeed(0);
+    }
+  }, [gameOver]);
+
+  useMemo(() => {
+    new FoodManager(addCollectible, removeCollectible, modifySnakeLength, modifySnakeSpeed, modifyScore);
+    new FoodUltraManager(addCollectible, removeCollectible, modifySnakeLength, modifySnakeSpeed, modifyScore);
+    new TrapManager(addCollectible, removeCollectible, modifySnakeLength, modifySnakeSpeed, modifyScore);
+  }, []);
+
+  const renderSnake = () => {
+    return (
+      <Snake
+        length={snakeLength}
+        speed={snakeSpeed}
+        collectibles={collectibles}
+        boardRef={boardRef}
+        gameOverWithMessage={gameOverWithMessage}
+      />
+    );
+  };
 
   return (
-    <svg width={width} height={height} className={styles.board} ref={boardRef}>
-      {/* {collectibles} */}
-      {snakeManager.getSnake()}
-    </svg>
+    <>
+      <div className={styles.gui}>
+        {gameOver ? <YouLooseScreen score={score} then={resetGame} message={gameOverMessage.current} /> : null}
+        <Score score={score} />
+      </div>
+      <svg width={size.width} height={size.height} className={styles.board} ref={boardRef}>
+        {renderSnake()}
+        {collectibles.map((collectible) => collectible.component)}
+      </svg>
+    </>
   );
 };

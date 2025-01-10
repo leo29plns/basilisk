@@ -2,6 +2,9 @@ body {
   width: 100%;
   min-height: 100vh;
   display: grid;
+  font-family: Inter, sans-serif;
+  color: var(--mint-900);
+  text-wrap: pretty;
 }
 
 #root {

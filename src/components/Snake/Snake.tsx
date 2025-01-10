@@ -3,18 +3,19 @@ import * as d3 from 'd3';
 import { useTicker } from '../../hooks/useTicker';
 import styles from './Snake.module.css';
 import { TPoint } from '../../types/TPoint';
-import { TCollider } from '../../types/TCollider';
+import { TCollectible } from '../../types/TCollectible';
 
 export interface ISnake {
   length: number;
   speed: number;
   boardRef: React.RefObject<SVGSVGElement>;
-  colliders?: TCollider[];
+  collectibles?: TCollectible[];
   circleRadius?: number;
   circleSpacing?: number;
+  gameOverWithMessage: (message: JSX.Element) => void;
 }
 
-export const Snake = ({ length, speed, boardRef, colliders, circleRadius = 16, circleSpacing = 8 }: ISnake) => {
+export const Snake = ({ length, speed, boardRef, collectibles, circleRadius = 16, circleSpacing = 8, gameOverWithMessage }: ISnake) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const bufferRef = useRef<TPoint[]>([{ x: circleRadius + 8, y: circleRadius + 8 }]);
   const directionRef = useRef({ x: 1, y: 0 });
@@ -76,31 +77,32 @@ export const Snake = ({ length, speed, boardRef, colliders, circleRadius = 16, c
   }: {
     head: TPoint;
     segments: TPoint[]
-  }): null | TPoint => {
+  }): null | { point: TPoint, collectible?: TCollectible } => {
     if (isSelfColliding(head, segments, determineSelfCollidingOffset(), circleRadius)) {
-      console.log('Self collision');
-      return head;
+      gameOverWithMessage(<>Are you drunk? <br />You just ate yourself :/</>);
+      return {point: head};
     }
 
     if (isOutOfBoard(head)) {
-      console.log('Out of board');
-      return head;
+      gameOverWithMessage(<>Bro<br />ur screen is not enough?</>);
+      return {point: head};
     }
 
-    if (!colliders) return null;
+    if (!collectibles) return null;
 
-    // checks every collider
-    for (const collider of colliders) {
-      for (const point of collider.points) {
-        if (isPointColliding({head, point, radius: collider.radius})) {
-          collider.callBackFn(point);
-          return point;
-        }
+    // checks every collectible
+    for (const collectible of collectibles) {
+      const point = collectible.point;
+
+      if (isPointColliding({head, point, radius: collectible.radius})) {
+        collectible.doCollide(collectible);
+        
+        return {point, collectible};
       }
     }
   
     return null;
-  }, [colliders, isPointColliding, isSelfColliding, determineSelfCollidingOffset, circleRadius, isOutOfBoard]);
+  }, [collectibles, isPointColliding, isSelfColliding, determineSelfCollidingOffset, circleRadius, isOutOfBoard]);
 
   const renderSnake = useCallback((): TPoint[] => {
     const svg = d3.select(svgRef.current);
@@ -178,9 +180,10 @@ export const Snake = ({ length, speed, boardRef, colliders, circleRadius = 16, c
     }
 
     const segments = renderSnake();
-    const collisionPoint = doCollides({head: newHead, segments});
+    const collision = doCollides({head: newHead, segments});
 
-    if (collisionPoint) console.log('collisionPoint', collisionPoint);
+    if (collision) console.log('collision point', collision.point);
+    if (collision && collision.collectible) console.log('collision collectible', collision.collectible);
   });
 
   const handleMouseMove = (event: MouseEvent) => {

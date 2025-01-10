@@ -1,6 +1,6 @@
 import { TPoint } from '../types/TPoint';
 
-export const isPointTooCloseToPoint = ({
+export const isPointTooClose = ({
   pointA,
   pointB,
   minDistance = 0,

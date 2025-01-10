@@ -1,10 +1,9 @@
 import { TPoint } from '../types/TPoint';
-import { isPointTooCloseToColliders } from './isPointTooCloseToColliders';
-import { isPointTooCloseToPoint } from './isPointTooCloseToPoint'; // Importation de la nouvelle fonction
-import { TCollider } from '../types/TCollider';
+import { isPointTooClose } from './isPointTooClose'; // Importation de la nouvelle fonction
+import { TCollectible } from '../types/TCollectible';
 
 export const randomPoints = ({
-  colliders,
+  collectibles,
   minDistance,
   areaWidth,
   areaHeight,
@@ -13,7 +12,7 @@ export const randomPoints = ({
   origin = { x: 0, y: 0 },
   maxAttempts = 100,
 }: {
-  colliders: TCollider[];
+  collectibles: TCollectible[];
   minDistance: number;
   areaWidth: number;
   areaHeight: number;
@@ -32,7 +31,7 @@ export const randomPoints = ({
     };
 
     const isTooCloseToExistingPoints = points.some((existingPoint) => 
-      isPointTooCloseToPoint({
+      isPointTooClose({
         pointA: newPoint,
         pointB: existingPoint,
         minDistance,
@@ -41,14 +40,17 @@ export const randomPoints = ({
       })
     );
 
-    const isTooCloseToColliders = isPointTooCloseToColliders({
-      newPoint,
-      colliders,
-      minDistance,
-      newPointRadius: radius
-    });
+    const isTooCloseToCollectibles = collectibles.some((collectible) => 
+      isPointTooClose({
+        pointA: newPoint,
+        pointB: collectible.point,
+        minDistance,
+        radiusA: radius,
+        radiusB: collectible.radius
+      })
+    );
 
-    if (!isTooCloseToExistingPoints && !isTooCloseToColliders) {
+    if (!isTooCloseToExistingPoints && !isTooCloseToCollectibles) {
       points.push(newPoint);
     } else {
       attempts++;

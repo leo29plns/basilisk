@@ -1,0 +1,15 @@
+.button {
+  background-color: var(--mint-500);
+  padding: .5rem 1rem;
+  font-size: 2rem;
+  font-weight: 700;
+  border: 0;
+  transition: all .2s ease;
+  text-align: start;
+
+  &:hover {
+    background-color: var(--mint-700);
+    color: var(--mint-50);
+    scale: 1.025;
+  }
+}

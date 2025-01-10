@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { GameBoard } from './components/GameBoard/GameBoard';
+import { TSize } from './types/TSize';
 
 const App = () => {
-  const [board, setBoard] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [boardSize, setBoardSize] = useState<TSize>({ width: window.innerWidth, height: window.innerHeight });
 
   useEffect(() => {
     const handleResize = () => {
-      setBoard({ width: window.innerWidth, height: window.innerHeight });
+      setBoardSize({ width: window.innerWidth, height: window.innerHeight });
     };
 
     window.addEventListener('resize', handleResize);
@@ -18,7 +19,7 @@ const App = () => {
 
   return (
     <>
-      <GameBoard width={board.width} height={board.height} />
+      <GameBoard size={boardSize}/>
     </>
   );
 };

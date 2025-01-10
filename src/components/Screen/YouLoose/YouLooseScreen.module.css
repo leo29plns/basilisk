@@ -1,0 +1,39 @@
+.youloose {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 3rem;
+  color: var(--mint-50);
+  background-color: var(--tomato-900);
+  padding: 2rem;
+
+  .centered {
+    display: grid;
+    gap: 2rem;
+  }
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .bestScore {
+    font-size: 1rem;
+    opacity: 0.5;
+    margin-top: 8px;
+    animation: fadeIn 1s ease;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    transform: translateX(5%);
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0%);
+  }
+}

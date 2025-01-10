@@ -1,10 +1,6 @@
+import { TCollectibleComponent } from '../../../types/TCollectibleComponent';
 import styles from './FoodCollectible.module.css';
 
-interface IFoodPoint {
-  x: number;
-  y: number;
-}
-
-export const FoodCollectible = ({ x, y }: IFoodPoint) => (
-  <circle cx={x} cy={y} r="10" fill="green" className={styles.foodCollectible} />
+export const FoodCollectible: React.FC<TCollectibleComponent> = ({ x, y, radius }) => (
+  <circle cx={x} cy={y} r={radius} className={styles.foodCollectible} />
 );

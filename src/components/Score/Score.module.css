@@ -1,0 +1,21 @@
+.score {
+  font-family: "Bigelow Rules", serif;
+  font-size: 3rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 5rem;
+  height: 5rem;
+  float: inline-end;
+  animation: scaleDown .2s ease;
+}
+
+@keyframes scaleDown {
+  0% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+  
+}
